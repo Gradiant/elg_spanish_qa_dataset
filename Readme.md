@@ -92,4 +92,4 @@ The original work of TranslateAlignRetrieve is presented in this paper :
 
 - Carrino, C. P., Costa-jussà, M. R., & Fonollosa, J. A. (2019). Automatic spanish translation of the squad dataset for multilingual question answering. arXiv preprint arXiv:1912.05200.
 
-The original work has MIT License
+The original work has MIT License.
