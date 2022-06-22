@@ -32,6 +32,7 @@ app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 APP_ROOT = "./"
 app.config["APPLICATION_ROOT"] = APP_ROOT
+app.config["JSON_ADD_STATUS"] = False
 json_app = FlaskJSON(app)
 
 
@@ -39,29 +40,42 @@ json_app = FlaskJSON(app)
 @app.route("/process", methods=["POST"])
 def process():
     data = request.get_json()
-    if (
-        (data is None or data.get("type") != "structuredText")
-        or ("texts" not in data)
-        or (len(data.get("texts")) != 2)
-    ):
 
-        output = invalid_request_error(None)
-        return output
+    if data["type"] != "structuredText":
+        return generate_failure_response(
+            status=400,
+            code="elg.request.type.unsupported",
+            text="Request type {0} not supported by this service",
+            params=[data["type"]],
+            detail=None,
+        )
+    if "texts" not in data or len(data.get("texts")) != 2:
+        return invalid_request_error(
+            None,
+        )
 
     try:
         context = data.get("texts")[0].get("content")
         question = data.get("texts")[1].get("content")
-
+    except Exception as e:
+        return invalid_request_error(
+            None,
+        )
+    try:
         result = processor.evaluate(question=question, context=context)
         output = generate_successful_response(result)
         return output
     except Exception as e:
+        text = (
+            "Unexpected error. If your input text is too long, this may be the cause."
+        )
+        # Standard message for internal error - the real error message goes in params
         return generate_failure_response(
-            status=404,
+            status=500,
             code="elg.service.internalError",
-            text=None,
-            params=None,
-            detail=e.__str__(),
+            text="Internal error during processing: {0}",
+            params=[text],
+            detail=None,
         )
 
 
