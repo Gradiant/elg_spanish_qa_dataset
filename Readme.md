@@ -66,7 +66,7 @@ source docker-builder.sh
 # Run the dockerfile
 
 ```
-docker run --rm -p 0.0.0.0:8866:8866 --name spanishqa elg_spanish_qa_dataset
+docker run --rm -p 0.0.0.0:8866:8866 --name spanishqa elg_spanish_qa_dataset:1.0.1
 ```
 
 # Test API (ELG Format)
