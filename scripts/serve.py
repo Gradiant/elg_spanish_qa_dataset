@@ -41,7 +41,7 @@ json_app = FlaskJSON(app)
 def process():
     data = request.get_json()
 
-    if data["type"] != "structuredText":
+    if data["type"] != "text":
         return generate_failure_response(
             status=400,
             code="elg.request.type.unsupported",
@@ -49,21 +49,28 @@ def process():
             params=[data["type"]],
             detail=None,
         )
-    if "texts" not in data or len(data.get("texts")) != 2:
+    if "content" not in data:
         return invalid_request_error(
             None,
         )
 
-    try:
-        context = data.get("texts")[0].get("content")
-        question = data.get("texts")[1].get("content")
-    except Exception as e:
-        return invalid_request_error(
-            None,
+    content = data.get("content")
+    params = data.get("params", {})
+    if "question" not in params:
+        # Standard message code for missing parameter
+        return generate_failure_response(
+            status=400,
+            code="elg.request.parameter.missing",
+            text="Required parameter {0} missing from request",
+            params=["question"],
+            detail=None,
         )
+
+    context = content
+    question = params["question"]
     try:
         result = processor.evaluate(question=question, context=context)
-        output = generate_successful_response(result)
+        output = generate_successful_text_response(result)
         return output
     except Exception as e:
         text = (
@@ -91,31 +98,10 @@ def invalid_request_error(e):
         },
     )
 
-
-def generate_successful_response(result):
-    """Generates the dict with the text classification reponse
-
-    :param label: the answer of the system
-    :return: a dict with the response in annotations format
-
-    """
-
-    response = {
-        "type": "annotations",
-        "annotations": {
-            "answers": [
-                {
-                    "start": result["start"],
-                    "end": result["end"],
-                    "features": {"answer": result["answer"], "score": result["score"]},
-                }
-            ]
-        },
-    }
-
+def generate_successful_text_response(result):
+    response = {"type": "texts", "texts": [{"content": result["answer"]}]}
     output = {"response": response}
     return output
-
 
 @json_app.invalid_json_error
 def generate_failure_response(status, code, text, params, detail):
