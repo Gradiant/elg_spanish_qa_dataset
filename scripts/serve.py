@@ -33,6 +33,7 @@ app.config["TEMPLATES_AUTO_RELOAD"] = True
 APP_ROOT = "./"
 app.config["APPLICATION_ROOT"] = APP_ROOT
 app.config["JSON_ADD_STATUS"] = False
+app.config["JSON_SORT_KEYS"] = False
 json_app = FlaskJSON(app)
 
 
