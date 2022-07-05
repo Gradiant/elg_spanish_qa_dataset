@@ -38,19 +38,18 @@ python serve.py
 
 Try the system with the following query:
 
-```
-curl -X POST http://0.0.0.0:8866/process -H 'Content-Type: application/json' -d '{"type": "structuredText","texts":[{"content": "La capital de España es Madrid."}, {"content": "Cuál es la capital de España?"}]}'
 
+```
+curl -X POST  http://0.0.0.0:8866/process -H 'Content-Type: application/json' -d '{"type":"text", "content":"La capital de España es Madrid.", "params":{"question":"Cuál es la capital de España?"}}'
 ```
 
 This request is a *structuredText* type. The first element of *texts* is the context and the second is the query.
 
 
-You will get an annotations response like this one:
+You will get a response like this one:
 
 ```
-{"response":{"type":"annotations","annotations":{"answers":[{"start":24,"end":30,"features":{"answer":"Madrid.","score":0.9910870068781747}}]}}}
-
+{"response":{"texts":[{"content":"Madrid."}],"type":"texts"}}
 ```
 
 # Build the dockerfile
@@ -66,7 +65,7 @@ source docker-builder.sh
 # Run the dockerfile
 
 ```
-docker run --rm -p 0.0.0.0:8866:8866 --name spanishqa elg_spanish_qa_dataset:1.0.1
+docker run --rm -p 0.0.0.0:8866:8866 --name spanishqa elg_spanish_qa_dataset:1.0.2
 ```
 
 # Test API (ELG Format)
@@ -80,7 +79,7 @@ For this process, follow the instructions:
 2) Launch the test: `docker-compose up`
 3) Make the requests, instead of to your API's endpoint, to the test's endpoint:
    ```
-     curl -X POST http://0.0.0.0:8866/processText/service -H 'Content-Type: application/json' -d '{"type": "structuredText","texts":[{"content": "La capital de España es Madrid."}, {"content": "Cuál es la capital de España?"}]}'
+     curl -X POST http://0.0.0.0:8866/processText/service -H 'Content-Type: application/json' -d '{"type":"text", "content":"La capital de España es Madrid.", "params":{"question":"Cuál es la capital de España?"}}'
 
    ```
 4) If your request and the API's response is compliance with the ELG API, you will receive the response.
