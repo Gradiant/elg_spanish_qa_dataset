@@ -32,6 +32,8 @@ app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 APP_ROOT = "./"
 app.config["APPLICATION_ROOT"] = APP_ROOT
+app.config["JSON_ADD_STATUS"] = False
+app.config["JSON_SORT_KEYS"] = False
 json_app = FlaskJSON(app)
 
 
@@ -39,29 +41,49 @@ json_app = FlaskJSON(app)
 @app.route("/process", methods=["POST"])
 def process():
     data = request.get_json()
-    if (
-        (data is None or data.get("type") != "structuredText")
-        or ("texts" not in data)
-        or (len(data.get("texts")) != 2)
-    ):
 
-        output = invalid_request_error(None)
-        return output
+    if data["type"] != "text":
+        return generate_failure_response(
+            status=400,
+            code="elg.request.type.unsupported",
+            text="Request type {0} not supported by this service",
+            params=[data["type"]],
+            detail=None,
+        )
+    if "content" not in data:
+        return invalid_request_error(
+            None,
+        )
 
+    content = data.get("content")
+    params = data.get("params", {})
+    if "question" not in params:
+        # Standard message code for missing parameter
+        return generate_failure_response(
+            status=400,
+            code="elg.request.parameter.missing",
+            text="Required parameter {0} missing from request",
+            params=["question"],
+            detail=None,
+        )
+
+    context = content
+    question = params["question"]
     try:
-        context = data.get("texts")[0].get("content")
-        question = data.get("texts")[1].get("content")
-
         result = processor.evaluate(question=question, context=context)
-        output = generate_successful_response(result)
+        output = generate_successful_text_response(result)
         return output
     except Exception as e:
+        text = (
+            "Unexpected error. If your input text is too long, this may be the cause."
+        )
+        # Standard message for internal error - the real error message goes in params
         return generate_failure_response(
-            status=404,
+            status=500,
             code="elg.service.internalError",
-            text=None,
-            params=None,
-            detail=e.__str__(),
+            text="Internal error during processing: {0}",
+            params=[text],
+            detail=None,
         )
 
 
@@ -77,31 +99,10 @@ def invalid_request_error(e):
         },
     )
 
-
-def generate_successful_response(result):
-    """Generates the dict with the text classification reponse
-
-    :param label: the answer of the system
-    :return: a dict with the response in annotations format
-
-    """
-
-    response = {
-        "type": "annotations",
-        "annotations": {
-            "answers": [
-                {
-                    "start": result["start"],
-                    "end": result["end"],
-                    "features": {"answer": result["answer"], "score": result["score"]},
-                }
-            ]
-        },
-    }
-
+def generate_successful_text_response(result):
+    response = {"type": "texts", "texts": [{"content": result["answer"]}]}
     output = {"response": response}
     return output
-
 
 @json_app.invalid_json_error
 def generate_failure_response(status, code, text, params, detail):
